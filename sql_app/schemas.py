@@ -1,4 +1,5 @@
 from pydantic import BaseModel
+from datetime import datetime
 
 class ProfileBase(BaseModel):
     first_name : str
@@ -29,7 +30,21 @@ class UserCreate(UserBase):
 class User(UserBase):
     id : int
     profiles : list[Profile] = []
+    created_at: datetime
 
     class Config():
         orm_mode = True
+
+class UserDetails(BaseModel):
+    username: str
+    old_password: str
+    new_password: str
+
+class ForgotPassword(BaseModel):
+    username: str
+
+class ResetPassword(BaseModel):
+    username: str
+    token: str
+    password: str
 

@@ -15,8 +15,8 @@ class User(Base):
     deleted_at = Column(DateTime, nullable= True)
 
     profiles = relationship("Profile", back_populates= "owner")
-
-
+    
+ 
 class Profile(Base):
     __tablename__ = "profile"
     id = Column(Integer, primary_key= True, index= True)
@@ -33,3 +33,12 @@ class Profile(Base):
     deleted_at = Column(DateTime, nullable= True)
 
     owner = relationship("User", back_populates= "profiles")
+
+
+class Token(Base):
+    __tablename__="token"
+    id = Column(Integer, primary_key= True, index= True)
+    user_id = Column(Integer, ForeignKey('user.id'))
+    token = Column(String(6), nullable= False)
+    created_at = Column(DateTime, default= datetime.utcnow)
+    updated_at = Column(DateTime, default= datetime.utcnow, onupdate= datetime.utcnow)

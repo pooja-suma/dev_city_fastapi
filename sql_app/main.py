@@ -24,12 +24,12 @@ def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
     return crud.create_user(db=db, user=user)
 
 @app.get("/users/", response_model=list[schemas.User])
-def read_users(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+def show_all_users(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     users = crud.get_users(db, skip=skip, limit=limit)
     return users
 
 @app.get("/users/{username}", response_model=schemas.User)
-def read_user(username: str, db: Session = Depends(get_db)):
+def show_single_user(username: str, db: Session = Depends(get_db)):
     db_user = crud.get_user(db, username=username)
     if db_user is None:
         raise HTTPException(status_code=404, detail="User not found")
@@ -43,6 +43,21 @@ def create_profile_for_user(
 
 
 @app.get("/profiles/", response_model=list[schemas.Profile])
-def read_profiles(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+def show_all_profiles(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     profiles = crud.get_profiles(db, skip=skip, limit=limit)
     return profiles
+
+@app.post("/change_password/")
+def change_password(user: schemas.UserDetails, db: Session= Depends(get_db)):
+    result = crud.change_password(db, user = user)
+    return result
+
+@app.post("/forgot_password")
+def forgot_password(user: schemas.ForgotPassword, db: Session= Depends(get_db)):
+    result = crud.forgot_password(db, user=user)
+    return result
+
+@app.post("/reset_password")
+def reset_password(user: schemas.ResetPassword, db: Session= Depends(get_db)):
+    result = crud.reset_password(db, user=user)
+    return result
