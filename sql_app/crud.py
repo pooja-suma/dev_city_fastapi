@@ -85,6 +85,39 @@ def reset_password(db: Session, user: schemas.ResetPassword):
 
     return 'Password reset successfully'
 
+
+def login(db: Session, user: schemas.Login):
+    db_user = db.query(models.User).filter(models.User.username == user.username).first()
+
+    if db_user is None:
+        return 'user not found'
+    
+    if not utils.verify_password(user.password, db_user.password):
+        return 'Incorrect Password'
+    
+    else:
+        return 'Login Success'
+    
+
+def delete(db: Session, id:int):
+    db_user = db.query(models.User).filter(models.User.id == id)
+
+    if not db_user.first():
+        return 'User not found'
+    
+    db_user.delete()
+    db.commit()
+    return 'User deleted successfully'
+
+    
+
+
+    
+
+
+
+
+
     
     
 

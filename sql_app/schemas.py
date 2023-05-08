@@ -48,3 +48,8 @@ class ResetPassword(BaseModel):
     token: str
     password: str
 
+class Login(BaseModel):
+    username: str
+    password: str
+
+

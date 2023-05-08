@@ -61,3 +61,13 @@ def forgot_password(user: schemas.ForgotPassword, db: Session= Depends(get_db)):
 def reset_password(user: schemas.ResetPassword, db: Session= Depends(get_db)):
     result = crud.reset_password(db, user=user)
     return result
+
+@app.post("/login")
+def login(user: schemas.Login, db:Session= Depends(get_db)):
+    result = crud.login(db,user = user)
+    return result
+
+@app.delete("/user/{id}")
+def delete_id(id:int, db:Session= Depends(get_db)):
+    result = crud.delete(db, id = id)
+    return result
