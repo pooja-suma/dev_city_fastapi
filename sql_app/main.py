@@ -1,8 +1,19 @@
 from fastapi import Depends, FastAPI, HTTPException
 from sqlalchemy.orm import Session
-
-from . import crud, models, schemas
+from jose import JWTError, jwt
+from . import crud, models, schemas, utils
 from .database import SessionLocal, engine
+from fastapi import status, Depends, HTTPException
+from typing import Annotated
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from datetime import datetime, timedelta
+from pydantic import parse_obj_as
+
+SECRET_KEY = "3c492103ee725d778784f6ec01128887bb45176b4963d98153aed911c2622f91"
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 30
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 models.Base.metadata.create_all(bind=engine)
 
@@ -71,3 +82,42 @@ def login(user: schemas.Login, db:Session= Depends(get_db)):
 def delete_id(id:int, db:Session= Depends(get_db)):
     result = crud.delete(db, id = id)
     return result
+
+async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)],db: Session= Depends(get_db)):
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        username: str = payload.get("sub")
+        if username is None:
+            raise credentials_exception
+        token_data = schemas.TokenData(username=username)
+    except JWTError:
+        raise credentials_exception
+    user = crud.get_user(db, username=token_data.username)
+    if user is None:
+        raise credentials_exception
+    return user
+
+
+@app.post("/token", response_model=schemas.Token)
+async def login_for_access_token(
+    form_data: Annotated[OAuth2PasswordRequestForm, Depends()], db: Session= Depends(get_db)
+):
+    user_obj = parse_obj_as(schemas.Login, {'username' :form_data.username,
+                           'password': form_data.password})
+    user = crud.login(db, user_obj)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect username or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = utils.create_access_token(
+        data={"sub": form_data.username}, expires_delta=access_token_expires
+    )
+    return {"access_token": access_token, "token_type": "bearer"}

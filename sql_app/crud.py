@@ -2,6 +2,8 @@ from sqlalchemy.orm import Session
 
 from . import models, schemas, utils
 from random import randint
+from fastapi import status, Depends, HTTPException
+
 
 def get_user(db: Session, username:str):
     return db.query(models.User).filter(models.User.username == username).first()
@@ -90,13 +92,12 @@ def login(db: Session, user: schemas.Login):
     db_user = db.query(models.User).filter(models.User.username == user.username).first()
 
     if db_user is None:
-        return 'user not found'
+        return False
     
     if not utils.verify_password(user.password, db_user.password):
-        return 'Incorrect Password'
+        return False
     
-    else:
-        return 'Login Success'
+    return user
     
 
 def delete(db: Session, id:int):
