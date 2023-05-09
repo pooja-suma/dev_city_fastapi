@@ -1,4 +1,4 @@
-from fastapi import Depends, FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException, File, UploadFile
 from sqlalchemy.orm import Session
 from jose import JWTError, jwt
 from . import crud, models, schemas, utils
@@ -8,6 +8,8 @@ from typing import Annotated
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from datetime import datetime, timedelta
 from pydantic import parse_obj_as
+from fastapi.exceptions import HTTPException
+import os, shutil
 
 SECRET_KEY = "3c492103ee725d778784f6ec01128887bb45176b4963d98153aed911c2622f91"
 ALGORITHM = "HS256"
@@ -121,3 +123,42 @@ async def login_for_access_token(
         data={"sub": form_data.username}, expires_delta=access_token_expires
     )
     return {"access_token": access_token, "token_type": "bearer"}
+
+@app.post("/uploadfile")
+async def upload_file(file: UploadFile):
+    file.file.seek(0, 2)
+    file_size = file.file.tell()
+
+    await file.seek(0)
+
+    if file_size > 2 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="File too large")
+
+    content_type = file.content_type
+    if content_type not in ["image/jpeg", "image/png", "image/gif"]:
+        raise HTTPException(status_code=400, detail="Invalid file type")
+    
+    upload_dir = os.path.join(os.getcwd(), "uploads")
+    # Create the upload directory if it doesn't exist
+    if not os.path.exists(upload_dir):
+        os.makedirs(upload_dir)
+
+    dest = os.path.join(upload_dir, file.filename)
+    print(dest)
+
+    with open(dest, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+
+    return {"filename":file.filename}
+
+
+
+
+
+
+# @app.post("/files")
+# async def UploadImage(file: bytes = File(...)):
+#     with open('images.jpeg','wb') as image:
+#         image.write(file)
+#         image.close() 
+#     return 'Avatar uploaded'
